@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -42,9 +43,9 @@ public class Post {
 //    private byte[] image; // New field for image
 
 
-//    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private Set<Comment> comments = new HashSet<>();
-//
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Comment> comments = new HashSet<>();
+
 //    @ManyToOne(fetch = FetchType.LAZY)
 //    @JoinColumn(name = "category_id")
 //    private Category category;
