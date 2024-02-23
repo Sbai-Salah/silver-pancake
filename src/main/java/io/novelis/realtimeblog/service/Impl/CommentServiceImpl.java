@@ -9,6 +9,7 @@ import io.novelis.realtimeblog.payload.CommentDto;
 import io.novelis.realtimeblog.repository.CommentRepository;
 import io.novelis.realtimeblog.repository.PostRepository;
 import io.novelis.realtimeblog.service.CommentService;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -21,9 +22,11 @@ public class CommentServiceImpl implements CommentService {
     private CommentRepository commentRepository;
     private PostRepository postRepository;
 
-    public CommentServiceImpl(CommentRepository commentRepository, PostRepository postRepository) {
+    private ModelMapper mapper;
+    public CommentServiceImpl(CommentRepository commentRepository, PostRepository postRepository, ModelMapper mapper) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
+        this.mapper = mapper;
     }
 
     @Override
@@ -114,23 +117,34 @@ public class CommentServiceImpl implements CommentService {
 
     // --------- MANUAL MAPPING ----------
 
-    private CommentDto mapToDto(Comment comment){
+//    private CommentDto mapToDto(Comment comment){
+//
+//        CommentDto commentDto = new CommentDto();
+//        commentDto.setId(comment.getId());
+//        commentDto.setName(comment.getName());
+//        commentDto.setEmail(comment.getEmail());
+//        commentDto.setBody(comment.getBody());
+//        return commentDto;
+//    }
+//
+//    private Comment mapToEntity(CommentDto commentDto){
+//
+//        Comment comment = new Comment();
+//        comment.setId(commentDto.getId());
+//        comment.setName(commentDto.getName());
+//        comment.setEmail(commentDto.getEmail());
+//        comment.setBody(commentDto.getBody());
+//        return comment;
+//    }
 
-        CommentDto commentDto = new CommentDto();
-        commentDto.setId(comment.getId());
-        commentDto.setName(comment.getName());
-        commentDto.setEmail(comment.getEmail());
-        commentDto.setBody(comment.getBody());
-        return commentDto;
+    // --------- AUTOMATIC MAPPING ----------
+    private CommentDto mapToDto(Comment comment){
+        return mapper.map(comment, CommentDto.class);
     }
 
     private Comment mapToEntity(CommentDto commentDto){
 
-        Comment comment = new Comment();
-        comment.setId(commentDto.getId());
-        comment.setName(commentDto.getName());
-        comment.setEmail(commentDto.getEmail());
-        comment.setBody(commentDto.getBody());
-        return comment;
+        return mapper.map(commentDto, Comment.class);
     }
+
 }
