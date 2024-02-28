@@ -3,6 +3,7 @@ package io.novelis.realtimeblog.controller;
 import io.novelis.realtimeblog.payload.CommentDto;
 import io.novelis.realtimeblog.service.CommentService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +21,12 @@ public class CommentController {
     }
 
 // @Valid : to enable the validation
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<CommentDto> createComment(@PathVariable(value = "postId") long postId,
                                                     @Valid @RequestBody CommentDto commentDto){
+
+
         return new ResponseEntity<>(commentService.createComment(postId, commentDto), HttpStatus.CREATED);
     }
 

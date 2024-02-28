@@ -8,4 +8,7 @@ import java.util.List;
 public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByTitleContainingOrDescriptionContaining(String titleKeyword, String descriptionKeyword);
 
+    List<Post> findByUserId(Long userId);
+
+    List<Post> findByCategoryId(Long categoryId);
 }

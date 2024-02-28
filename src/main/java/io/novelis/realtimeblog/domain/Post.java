@@ -6,7 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,18 +38,28 @@ public class Post {
 //    @Lob
     private String content;
 
-//    @Column(name = "creation_date")
-//    private LocalDateTime creationDate; // New field for creation date
-//
-//    @Lob
-//    @Column(name = "image")
-//    private byte[] image; // New field for image
 
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Comment> comments = new HashSet<>();
 
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private Category category;
+
+    //------------------------ NEW FIELDS ---------------------
+
+    @CreationTimestamp
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "creation_date", nullable = true, updatable = false)
+    private Date creationDate;
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = true)
+    private User user;
+
 }

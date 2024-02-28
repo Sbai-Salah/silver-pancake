@@ -17,6 +17,10 @@ configurations {
 	}
 }
 
+springBoot {
+	mainClass = 'io.novelis.realtimeblog.RealTimeBlogApplication'
+}
+
 repositories {
 	mavenCentral()
 }
@@ -29,8 +33,9 @@ dependencies {
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.12.5'
 	implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.12.5'
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.12.5'
-	implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.3.0'
-
+//	implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.3.0'
+//	implementation group: 'io.springfox', name: 'springfox-boot-starter', version: '3.0.0'
+//	implementation group: 'io.springfox', name: 'springfox-swagger-ui', version: '3.0.0'
 	implementation group: 'org.springframework.boot', name: 'spring-boot-starter-validation', version: '3.2.2'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'

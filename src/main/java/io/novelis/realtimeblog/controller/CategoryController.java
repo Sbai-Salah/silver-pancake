@@ -28,6 +28,7 @@ public class CategoryController {
         return new ResponseEntity<>(savedCategory, HttpStatus.CREATED);
     }
 
+
     // Build Get Category REST API
     @GetMapping("{id}")
     public ResponseEntity<CategoryDto> getCategory(@PathVariable("id") Long categoryId){

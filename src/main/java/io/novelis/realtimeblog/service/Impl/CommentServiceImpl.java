@@ -3,14 +3,19 @@ package io.novelis.realtimeblog.service.Impl;
 import io.micrometer.observation.annotation.Observed;
 import io.novelis.realtimeblog.domain.Comment;
 import io.novelis.realtimeblog.domain.Post;
+import io.novelis.realtimeblog.domain.User;
 import io.novelis.realtimeblog.exception.BlogAPIException;
 import io.novelis.realtimeblog.exception.ResourceNotFoundException;
 import io.novelis.realtimeblog.payload.CommentDto;
 import io.novelis.realtimeblog.repository.CommentRepository;
 import io.novelis.realtimeblog.repository.PostRepository;
+import io.novelis.realtimeblog.repository.UserRepository;
 import io.novelis.realtimeblog.service.CommentService;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,21 +26,34 @@ public class CommentServiceImpl implements CommentService {
 
     private CommentRepository commentRepository;
     private PostRepository postRepository;
+    private UserRepository userRepository;
 
     private ModelMapper mapper;
-    public CommentServiceImpl(CommentRepository commentRepository, PostRepository postRepository, ModelMapper mapper) {
+    public CommentServiceImpl(CommentRepository commentRepository, PostRepository postRepository, UserRepository userRepository, ModelMapper mapper) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
+        this.userRepository = userRepository;
         this.mapper = mapper;
     }
 
     @Override
     public CommentDto createComment(long postId, CommentDto commentDto){
+        // Get the authenticated user's information
+        // ----- RETRIEVE USER AFTER AUTH ------
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User user = userRepository.findByUsernameOrEmail(username, username)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found with username or email: "+ username));
+        // ----- END RETRIEVE USER AFTER AUTH -----
         Comment comment = mapToEntity(commentDto);
         // getting thr post by id
         Post post = postRepository.findById(postId).orElseThrow(()-> new ResourceNotFoundException("Post", "id", postId));
         // set post to comment entity
         comment.setPost(post);
+        comment.setEmail(username);
+
+        comment.setName(user.getUsername());
         // save comment entity to db and return a dto
         return mapToDto(commentRepository.save(comment));
 
@@ -81,9 +99,15 @@ public class CommentServiceImpl implements CommentService {
         if(!comment.getPost().getId().equals(post.getId())){
             throw new BlogAPIException(HttpStatus.BAD_REQUEST, "Comment does not belongs to post");
         }
-
-        comment.setName(commentRequest.getName());
-        comment.setEmail(commentRequest.getEmail());
+        // ----- RETRIEVE USER AFTER AUTH ------
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User user = userRepository.findByUsernameOrEmail(username, username)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found with username or email: "+ username));
+        // ----- END RETRIEVE USER AFTER AUTH -----
+        comment.setName(user.getUsername());
+        comment.setEmail(user.getEmail());
         comment.setBody(commentRequest.getBody());
 
         Comment updatedComment = commentRepository.save(comment);

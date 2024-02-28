@@ -1,18 +1,24 @@
 package io.novelis.realtimeblog.service.Impl;
 
 import io.novelis.realtimeblog.domain.Post;
+import io.novelis.realtimeblog.domain.User;
 import io.novelis.realtimeblog.exception.ResourceNotFoundException;
 import io.novelis.realtimeblog.payload.PostDto;
 import io.novelis.realtimeblog.payload.PostResponse;
 import io.novelis.realtimeblog.repository.PostRepository;
+import io.novelis.realtimeblog.repository.UserRepository;
 import io.novelis.realtimeblog.service.PostService;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.awt.print.Pageable;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,22 +26,46 @@ import java.util.stream.Collectors;
 @Service
 public class PostServiceImpl implements PostService {
 
+    private UserRepository userRepository;
     private PostRepository postRepository;
     private ModelMapper mapper;
 
 
-    public PostServiceImpl(PostRepository postRepository, ModelMapper mapper
+    public PostServiceImpl(PostRepository postRepository, ModelMapper mapper, UserRepository userRepository
                            ) {
         this.postRepository = postRepository;
         this.mapper = mapper;
+        this.userRepository = userRepository;
     }
 
     @Override
     public PostDto createPost(PostDto postDto){
-        Post post = mapToEntity(postDto);
-        Post newPost = postRepository.save(post);
-        return mapToDto(newPost);
+//        Post post = mapToEntity(postDto);
+//        post.setUser(user);
+//        Post newPost = postRepository.save(post);
+//        return mapToDto(newPost);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            String username = authentication.getName();
+            User currentUser = userRepository.findByEmail(username)
+                    .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+
+            // Now you have the authenticated user, proceed with creating the post
+            Post post = mapToEntity(postDto);
+            post.setUser(currentUser);
+            post.setComments(new HashSet<>());
+            Post newPost = postRepository.save(post);
+            return mapToDto(newPost);
+        } else {
+            System.out.println("User is not authenticated");
+
+            return null;
+        }
+
     }
+
+
+
 
 //    @Override
 //    public List<PostDto> getAllPosts(){
@@ -103,6 +133,19 @@ public class PostServiceImpl implements PostService {
         return posts.stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
+// ------------- NEW SERVICES ---------------------
+
+    @Override
+    public List<PostDto> getPostsByUserId(Long userId) {
+        List<Post> posts = postRepository.findByUserId(userId);
+        return posts.stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PostDto> getPostsByCategoryId(Long categoryId) {
+        List<Post> posts = postRepository.findByCategoryId(categoryId);
+        return posts.stream().map(this::mapToDto).collect(Collectors.toList());
+    }
 // ------------- MANUAL MAPPING ---------------------
 // Convert Entity to DTO
 //    private PostDto mapToDto(Post post){
