@@ -3,12 +3,14 @@ package io.novelis.realtimeblog.service.Impl;
 import io.novelis.realtimeblog.domain.Role;
 import io.novelis.realtimeblog.domain.User;
 import io.novelis.realtimeblog.exception.BlogAPIException;
+import io.novelis.realtimeblog.exception.ResourceNotFoundException;
 import io.novelis.realtimeblog.payload.LoginDto;
 import io.novelis.realtimeblog.payload.RegisterDto;
 import io.novelis.realtimeblog.repository.RoleRepository;
 import io.novelis.realtimeblog.repository.UserRepository;
 import io.novelis.realtimeblog.security.JwtTokenProvider;
 import io.novelis.realtimeblog.service.AuthService;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,28 +20,32 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
 public class AuthServiceImpl implements AuthService {
 
-    private AuthenticationManager authenticationManager;
-    private UserRepository userRepository;
-    private RoleRepository roleRepository;
-    private PasswordEncoder passwordEncoder;
-    private JwtTokenProvider jwtTokenProvider;
+    private final AuthenticationManager authenticationManager;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final ModelMapper modelMapper;
 
 
     public AuthServiceImpl(AuthenticationManager authenticationManager,
                            UserRepository userRepository,
                            RoleRepository roleRepository,
                            PasswordEncoder passwordEncoder,
-                           JwtTokenProvider jwtTokenProvider) {
+                           JwtTokenProvider jwtTokenProvider,
+                           ModelMapper mapper) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.modelMapper = mapper;
     }
 
     @Override
@@ -53,6 +59,10 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtTokenProvider.generateToken(authentication);
 
         return token;
+    }
+    public boolean isUserAdmin(String username) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        return userOptional.map(User::isAdmin).orElse(false); // If user not found, return false
     }
 
     @Override
@@ -83,4 +93,22 @@ public class AuthServiceImpl implements AuthService {
 
         return "User registered successfully!.";
     }
+
+    @Override
+    public Optional<User> findByUsername(String username) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", 777));
+        return Optional.ofNullable(user);
+    }
+
+    @Override
+    public Optional<User> findAuthByUserId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        return Optional.ofNullable(user);
+    }
+
+
+
 }

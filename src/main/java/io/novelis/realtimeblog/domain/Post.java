@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 
 import java.util.Date;
 import java.util.HashSet;
@@ -48,7 +49,6 @@ public class Post {
     @JoinColumn(name = "category_id")
     private Category category;
 
-    //------------------------ NEW FIELDS ---------------------
 
     @CreationTimestamp
     @Temporal(TemporalType.TIMESTAMP)
@@ -61,5 +61,14 @@ public class Post {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = true)
     private User user;
+
+
+    @Formula("(SELECT c.name FROM categories c WHERE c.id = category_id)")
+    private String nameOfCategory;
+
+
+    @Column(name = "likes_count")
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Like> likes = new HashSet<>();
 
 }

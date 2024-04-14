@@ -6,15 +6,10 @@ import io.novelis.realtimeblog.payload.PostResponse;
 import org.springframework.security.core.Authentication;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PostService {
     PostDto createPost(PostDto postDto);
-
-//    List<PostDto> getAllPosts();
-    // get all posts with pagination
-//    List<PostDto> getAllPosts(int pageNo, int pageSize);
-
-    // get all posts with pagination and with more data provider with post response
     PostResponse getAllPosts(int pageNo, int pageSize, String sortBy);
     PostDto getPostById(long id);
     PostDto updatePost(PostDto postDto, long id);
@@ -24,8 +19,12 @@ public interface PostService {
     List<PostDto> searchPostsByKeyword(String keyword);
 
     List<PostDto> getPostsByUserId(Long userId);
+    List<PostDto> getPostsByUserName(String userName);
     List<PostDto> getPostsByCategoryId(Long categoryId);
 
+    void deletePostByIdAndUsername(Long postId, String username);
 
+    void likePost(Long postId);
+    void unlikePost(Long postId, Optional<User> user);
 
 }

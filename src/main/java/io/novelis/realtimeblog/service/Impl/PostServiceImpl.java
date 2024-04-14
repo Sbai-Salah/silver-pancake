@@ -1,5 +1,6 @@
 package io.novelis.realtimeblog.service.Impl;
 
+import io.novelis.realtimeblog.domain.Like;
 import io.novelis.realtimeblog.domain.Post;
 import io.novelis.realtimeblog.domain.User;
 import io.novelis.realtimeblog.exception.ResourceNotFoundException;
@@ -15,20 +16,23 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.awt.print.Pageable;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
+import java.util.Set;
 
 @Service
 public class PostServiceImpl implements PostService {
 
-    private UserRepository userRepository;
-    private PostRepository postRepository;
-    private ModelMapper mapper;
+    private final UserRepository userRepository;
+    private final PostRepository postRepository;
+    private final ModelMapper mapper;
 
 
     public PostServiceImpl(PostRepository postRepository, ModelMapper mapper, UserRepository userRepository
@@ -141,11 +145,79 @@ public class PostServiceImpl implements PostService {
         return posts.stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
+
+    @Override
+    public List<PostDto> getPostsByUserName(String userName) {
+        List<Post> posts = postRepository.findByUser_Username(userName);
+        return posts.stream().map(this::mapToDto).collect(Collectors.toList());
+    }
     @Override
     public List<PostDto> getPostsByCategoryId(Long categoryId) {
         List<Post> posts = postRepository.findByCategoryId(categoryId);
         return posts.stream().map(this::mapToDto).collect(Collectors.toList());
     }
+
+    @Transactional
+    public void deletePostByIdAndUsername(Long postId, String username) {
+        // Find the post by ID
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post", "id", postId));
+        // Check if the authenticated user is the owner of the post
+        if (!post.getUser().getEmail().equals(username)) {
+            throw new Error("You are not authorized to delete this post- Post User: " + post.getUser().getUsername()
+            + " You are : " + username);
+        }
+        // Delete the post
+        postRepository.delete(post);
+    }
+
+    @Override
+    @Transactional
+    public void likePost(Long postId) {
+        // ----- RETRIEVE USER AFTER AUTH ------
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User user = userRepository.findByUsernameOrEmail(username, username)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found with username or email: "+ username));
+
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post", "id", postId));
+
+        // Check if the user has already liked the post
+        if (post.getLikes().stream().anyMatch(like -> like.getUser().equals(user))) {
+            throw new RuntimeException("User has already liked the post");
+        }
+
+        // Create a new Like entity and associate it with the user and post
+        Like like = new Like();
+        like.setUser(user);
+        like.setPost(post);
+        post.getLikes().add(like);
+
+        postRepository.save(post);
+    }
+
+
+    @Override
+    @Transactional
+    public void unlikePost(Long postId, Optional<User> user) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post", "id", postId));
+
+        // Find the like associated with the user and post
+        Optional<Like> likeOptional = post.getLikes().stream()
+                .filter(like -> like.getUser().equals(user))
+                .findFirst();
+
+        // If like is found, remove it from the post's likes collection
+        likeOptional.ifPresent(like -> post.getLikes().remove(like));
+
+        postRepository.save(post);
+    }
+
+
 // ------------- MANUAL MAPPING ---------------------
 // Convert Entity to DTO
 //    private PostDto mapToDto(Post post){
@@ -170,14 +242,53 @@ public class PostServiceImpl implements PostService {
 //    }
 // ------------- AUTOMATIC MAPPING ---------------------
 // convert Entity into DTO
-private PostDto mapToDto(Post post){
-    return mapper.map(post, PostDto.class);
+//private PostDto mapToDto(Post post){
+//    return mapper.map(post, PostDto.class);
+//}
+public PostDto mapToDto(Post post) {
+    PostDto postDto = mapper.map(post, PostDto.class);
+    postDto.setLikesCount(post.getLikes().size()); // Set the likes count
+    postDto.setLikedUserIds(mapLikedUserIds(post.getLikes())); // Map liked user IDs
+    return postDto;
 }
 
-    // convert DTO to entity
-    private Post mapToEntity(PostDto postDto){
-        return mapper.map(postDto, Post.class);
+    private Set<Long> mapLikedUserIds(Set<Like> likes) {
+        Set<Long> likedUserIds = new HashSet<>();
+        for (Like like : likes) {
+            likedUserIds.add(like.getUser().getId()); // Add user IDs of users who liked the post
+        }
+        return likedUserIds;
     }
+//    // convert DTO to entity
+//    private Post mapToEntity(PostDto postDto){
+//        return mapper.map(postDto, Post.class);
+//    }
+public Post mapToEntity(PostDto postDto) {
+    Post post = mapper.map(postDto, Post.class);
 
+    // Set likes count and liked users from DTO to entity
+    post.setLikes(mapLikesFromDto(postDto));
+
+    return post;
+}
+
+    private Set<Like> mapLikesFromDto(PostDto postDto) {
+        Set<Like> likes = new HashSet<>();
+        if (postDto.getLikedUserIds() != null) {
+            for (Long userId : postDto.getLikedUserIds()) {
+                User user = new User();
+                user.setId(userId); // Assuming User has setId method
+
+                Like like = new Like();
+                like.setUser(user); // Set user for like
+
+                // Set the post for the like if needed
+                // like.setPost(post);
+
+                likes.add(like);
+            }
+        }
+        return likes;
+    }
 
 }
