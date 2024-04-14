@@ -14,13 +14,13 @@ import java.util.List;
 @RequestMapping("/api/v1")
 public class CommentController {
 
-    private CommentService commentService;
+    private final CommentService commentService;
 
     public CommentController(CommentService commentService) {
         this.commentService = commentService;
     }
 
-// @Valid : to enable the validation
+    // @Valid : to enable validation
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<CommentDto> createComment(@PathVariable(value = "postId") long postId,

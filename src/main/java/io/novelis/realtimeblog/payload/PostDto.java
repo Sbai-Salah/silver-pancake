@@ -1,10 +1,12 @@
 package io.novelis.realtimeblog.payload;
 
+import io.novelis.realtimeblog.domain.Like;
 import lombok.Data;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 //import io.swagger.v3.oas.annotations.media.Schema;
 @Data
@@ -44,8 +46,8 @@ public class PostDto {
 //            description = "Blog Post Category"
 //    )
     private Long categoryId;
+    private String nameOfCategory;
 
-    //------------------------ NEW FIELDS ---------------------
 
     private Date creationDate;
 //    @Schema(
@@ -57,4 +59,7 @@ public class PostDto {
 //            description = "URL of the Post Image"
 //    )
     private String imageUrl;
+    private int likesCount; // Include the count of likes
+    private Set<Long> likedUserIds; // Include only the user IDs who liked the post
+
 }

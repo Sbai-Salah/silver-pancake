@@ -37,8 +37,17 @@ public class User {
     )
     private Set<Role> roles;
 
-//------------------------ NEW FIELDS ---------------------
 @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
 private Set<Post> posts = new HashSet<>();
+
+    // Check if the user has the ADMIN role
+    public boolean isAdmin() {
+        for (Role role : roles) {
+            if (role.getName().equals("ROLE_ADMIN")) {
+                return true;
+            }
+        }
+        return false;
+    }
 
 }
